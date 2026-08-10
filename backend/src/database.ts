@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { Pool } from 'pg';
 import path from 'path';
+import bcryptjs from 'bcryptjs';
 
 const USE_POSTGRES = process.env.DATABASE_URL ? true : false;
 
@@ -127,14 +128,14 @@ async function initializePostgres() {
     const existingReuniones = await pgPool.query('SELECT COUNT(*) FROM reuniones_planeadas');
     if (existingReuniones.rows[0].count === '0') {
       const reuniones = [
-        ('MAR', '19:30', 'Culto', 'Culto del Martes'),
-        ('JUE', '19:30', 'Culto', 'Culto del Jueves'),
-        ('DOM', '11:00', 'Culto', 'Culto Domingo Mañana'),
-        ('DOM', '18:30', 'Culto', 'Culto Domingo Tarde'),
-        ('DOM', '11:00', 'UNT Kids', 'UNT Kids Domingo Mañana'),
-        ('DOM', '18:30', 'UNT Kids', 'UNT Kids Domingo Tarde'),
-        ('DOM', '11:00', 'UNT Teens', 'UNT Teens Domingo Mañana'),
-        ('DOM', '18:30', 'UNT Teens', 'UNT Teens Domingo Tarde')
+        ['MAR', '19:30', 'Culto', 'Culto del Martes'],
+        ['JUE', '19:30', 'Culto', 'Culto del Jueves'],
+        ['DOM', '11:00', 'Culto', 'Culto Domingo Mañana'],
+        ['DOM', '18:30', 'Culto', 'Culto Domingo Tarde'],
+        ['DOM', '11:00', 'UNT Kids', 'UNT Kids Domingo Mañana'],
+        ['DOM', '18:30', 'UNT Kids', 'UNT Kids Domingo Tarde'],
+        ['DOM', '11:00', 'UNT Teens', 'UNT Teens Domingo Mañana'],
+        ['DOM', '18:30', 'UNT Teens', 'UNT Teens Domingo Tarde']
       ];
 
       for (const [dia, hora, tipo, desc] of reuniones) {
@@ -143,6 +144,17 @@ async function initializePostgres() {
           [dia, hora, tipo, desc]
         );
       }
+    }
+
+    // Seed usuario de prueba
+    const existingUsers = await pgPool.query('SELECT COUNT(*) FROM usuarios');
+    if (existingUsers.rows[0].count === '0') {
+      const passwordHash = bcryptjs.hashSync('Test@2026', 10);
+      await pgPool.query(
+        'INSERT INTO usuarios (email, nombre, rol, password_hash) VALUES ($1, $2, $3, $4)',
+        ['pastor@ictue.cl', 'Pastor Luis', 'pastor', passwordHash]
+      );
+      console.log('✓ Usuario de prueba creado: pastor@ictue.cl / Test@2026');
     }
   } catch (err) {
     console.error('Error inicializando PostgreSQL:', err);
