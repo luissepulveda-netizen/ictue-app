@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import axios from 'axios'
+import api from '../api'
 
 interface RegistroAsistenciaProps {
   token: string
@@ -33,7 +33,7 @@ export default function RegistroAsistencia({ token, onSuccess }: RegistroAsisten
     setLoading(true)
     try {
       const hoy = new Date().toISOString().split('T')[0]
-      await axios.post(
+      await api.post(
         '/api/asistencia',
         {
           reunion_id: selectedReunion,

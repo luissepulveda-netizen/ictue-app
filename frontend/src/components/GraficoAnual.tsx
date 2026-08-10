@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import axios from 'axios'
+import api from '../api'
 
 interface GraficoAnualProps {
   token: string
@@ -13,7 +13,7 @@ export default function GraficoAnual({ token }: GraficoAnualProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('/api/estadisticas/anual?tipo=Culto', {
+        const response = await api.get('/api/estadisticas/anual?tipo=Culto', {
           headers: { Authorization: `Bearer ${token}` }
         })
 

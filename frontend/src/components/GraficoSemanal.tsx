@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import axios from 'axios'
+import api from '../api'
 
 interface GraficoSemanalProps {
   token: string
@@ -13,7 +13,7 @@ export default function GraficoSemanal({ token }: GraficoSemanalProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('/api/estadisticas/semanal?tipo=Culto', {
+        const response = await api.get('/api/estadisticas/semanal?tipo=Culto', {
           headers: { Authorization: `Bearer ${token}` }
         })
 
