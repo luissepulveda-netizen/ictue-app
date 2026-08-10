@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query } from '../database';
+import { queryAsync, runAsync } from '../database';
 
 const router = express.Router();
 
@@ -18,13 +18,13 @@ router.post('/login', async (req: Request<{}, {}, LoginBody>, res: Response) => 
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
     }
 
-    const result = await query('SELECT * FROM usuarios WHERE email = $1', [email]);
+    const usuarios = await queryAsync('SELECT * FROM usuarios WHERE email = ?', [email]);
 
-    if (result.rows.length === 0) {
+    if (!usuarios || usuarios.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const usuario = result.rows[0];
+    const usuario = usuarios[0];
     const passwordValid = await bcrypt.compare(password, usuario.password_hash);
 
     if (!passwordValid) {
@@ -54,14 +54,14 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const result = await query(
-      'INSERT INTO usuarios (email, nombre, password_hash, rol) VALUES ($1, $2, $3, $4) RETURNING id, email, nombre',
+    await runAsync(
+      'INSERT INTO usuarios (email, nombre, password_hash, rol) VALUES (?, ?, ?, ?)',
       [email, nombre, passwordHash, rol || 'lider']
     );
 
-    res.status(201).json({ usuario: result.rows[0] });
+    res.status(201).json({ usuario: { email, nombre, rol: rol || 'lider' } });
   } catch (error: any) {
-    if (error.code === '23505') {
+    if (error.message?.includes('UNIQUE constraint failed')) {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
     console.error('Error en registro:', error);

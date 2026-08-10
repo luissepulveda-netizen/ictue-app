@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initializeDatabase } from './database';
+import { db } from './database';
 import authRoutes from './routes/auth';
 import asistenciaRoutes from './routes/asistencia';
 import estadisticasRoutes from './routes/estadisticas';
@@ -26,16 +26,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // Iniciar servidor
-async function startServer() {
-  try {
-    await initializeDatabase();
-    app.listen(PORT, () => {
-      console.log(`✓ Servidor ICTUE corriendo en puerto ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Error iniciando servidor:', error);
-    process.exit(1);
-  }
-}
-
-startServer();
+app.listen(PORT, () => {
+  console.log(`✓ Servidor ICTUE corriendo en puerto ${PORT}`);
+});

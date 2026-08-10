@@ -1,32 +1,15 @@
 #!/usr/bin/env python3
 """
-Script para crear usuarios en la BD de ICTUE
+Script para crear usuarios en la BD SQLite de ICTUE
 Uso: python create_user.py
 """
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import sqlite3
 import getpass
+import bcrypt
 import os
-from dotenv import load_dotenv
 
-# Intentar importar bcrypt, si no está disponible, decirle al usuario
-try:
-    import bcrypt
-except ImportError:
-    print("❌ Instala bcrypt primero:")
-    print("   pip install bcrypt")
-    exit(1)
-
-# Cargar variables de entorno
-load_dotenv('../backend/.env')
-
-DATABASE_URL = os.getenv('DATABASE_URL')
-
-if not DATABASE_URL:
-    print("❌ DATABASE_URL no está configurada")
-    print("   Asegúrate de tener .env en la carpeta backend")
-    exit(1)
+DB_PATH = '../ictue.db'
 
 def hash_password(password: str) -> str:
     """Genera hash bcrypt de una contraseña"""
@@ -76,43 +59,42 @@ def create_user():
 
     # Conectar a BD
     try:
-        print("🔌 Conectando a BD...")
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        print("🔌 Conectando a BD SQLite...")
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
 
         # Verificar si email ya existe
-        cur.execute("SELECT id FROM usuarios WHERE email = %s", (email,))
-        if cur.fetchone():
+        cursor.execute("SELECT id FROM usuarios WHERE email = ?", (email,))
+        if cursor.fetchone():
             print(f"❌ El email {email} ya existe")
-            cur.close()
+            cursor.close()
             conn.close()
             return
 
         # Insertar usuario
-        cur.execute(
+        cursor.execute(
             """INSERT INTO usuarios (email, nombre, password_hash, rol)
-               VALUES (%s, %s, %s, %s)
-               RETURNING id, email, nombre, rol""",
+               VALUES (?, ?, ?, ?)""",
             (email, nombre, password_hash, rol)
         )
 
-        usuario = cur.fetchone()
         conn.commit()
+        usuario_id = cursor.lastrowid
 
         print("\n" + "="*50)
         print("✅ ¡Usuario creado exitosamente!")
         print("="*50)
         print(f"\n📊 Detalles:")
-        print(f"   ID: {usuario['id']}")
-        print(f"   Email: {usuario['email']}")
-        print(f"   Nombre: {usuario['nombre']}")
-        print(f"   Rol: {usuario['rol']}")
+        print(f"   ID: {usuario_id}")
+        print(f"   Email: {email}")
+        print(f"   Nombre: {nombre}")
+        print(f"   Rol: {rol}")
         print(f"\n🔐 Credenciales de Login:")
         print(f"   Email: {email}")
         print(f"   Contraseña: (la que acabas de crear)")
         print("\n💡 Anota estas credenciales en un lugar seguro\n")
 
-        cur.close()
+        cursor.close()
         conn.close()
 
     except Exception as e:
@@ -122,11 +104,11 @@ def create_user():
 def list_users():
     """Lista todos los usuarios"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
 
-        cur.execute("SELECT id, email, nombre, rol, created_at FROM usuarios ORDER BY created_at DESC")
-        usuarios = cur.fetchall()
+        cursor.execute("SELECT id, email, nombre, rol FROM usuarios ORDER BY id DESC")
+        usuarios = cursor.fetchall()
 
         if not usuarios:
             print("❌ No hay usuarios")
@@ -139,11 +121,11 @@ def list_users():
         print("-"*70)
 
         for u in usuarios:
-            print(f"{u['id']:<5} {u['email']:<25} {u['nombre']:<20} {u['rol']:<10}")
+            print(f"{u[0]:<5} {u[1]:<25} {u[2]:<20} {u[3]:<10}")
 
         print("="*70 + "\n")
 
-        cur.close()
+        cursor.close()
         conn.close()
 
     except Exception as e:

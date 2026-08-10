@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { query } from '../database';
+import { queryAsync, runAsync } from '../database';
 import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
@@ -13,14 +13,13 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Datos incompletos' });
     }
 
-    const result = await query(
+    const result = await runAsync(
       `INSERT INTO asistencia (reunion_id, fecha, num_asistentes, expositor, observaciones, registrado_por)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [reunion_id, fecha, num_asistentes, expositor || null, observaciones || null, usuario_id]
     );
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({ id: result.id, reunion_id, fecha, num_asistentes });
   } catch (error) {
     console.error('Error registrando asistencia:', error);
     res.status(500).json({ error: 'Error en el servidor' });
@@ -29,13 +28,13 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
 
 router.get('/reuniones', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const result = await query(
+    const reuniones = await queryAsync(
       `SELECT * FROM reuniones_planeadas ORDER BY
        CASE WHEN dia_semana = 'MAR' THEN 1
             WHEN dia_semana = 'JUE' THEN 2
             WHEN dia_semana = 'DOM' THEN 3 END, hora`
     );
-    res.json(result.rows);
+    res.json(reuniones);
   } catch (error) {
     console.error('Error obteniendo reuniones:', error);
     res.status(500).json({ error: 'Error en el servidor' });
