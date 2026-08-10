@@ -203,7 +203,7 @@ export function runAsync(sql: string, params: any[] = []): Promise<any> {
         }
       });
     } else {
-      db.run(sql, params, function(err: any) {
+      db.run(sql, params, function(this: any, err: any) {
         if (err) reject(err);
         else resolve({ id: this.lastID, changes: this.changes });
       });

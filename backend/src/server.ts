@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bcryptjs from 'bcryptjs';
-import { db, queryAsync, runAsync } from './database';
+import { queryAsync, runAsync } from './database';
 import authRoutes from './routes/auth';
 import asistenciaRoutes from './routes/asistencia';
 import estadisticasRoutes from './routes/estadisticas';
