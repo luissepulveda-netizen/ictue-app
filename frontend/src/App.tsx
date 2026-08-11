@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard'
 import './App.css'
 
 function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+  const [token, setToken] = useState<string | null>(null)
   const [usuario, setUsuario] = useState<any>(null)
 
   useEffect(() => {
