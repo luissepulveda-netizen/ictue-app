@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import axios from 'axios'
+import { supabase } from '../supabaseClient'
 
 interface LoginProps {
-  onLogin: (token: string, usuario: any) => void
+  onLogin: () => void
 }
 
 export default function Login({ onLogin }: LoginProps) {
@@ -16,16 +16,15 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
     setLoading(true)
 
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-      const response = await axios.post(`${apiUrl}/api/auth/login`, { email, password })
-      const { token, usuario } = response.data
-      onLogin(token, usuario)
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión')
-    } finally {
-      setLoading(false)
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (authError) {
+      setError('Credenciales inválidas')
+    } else {
+      onLogin()
     }
+
+    setLoading(false)
   }
 
   return (

@@ -1,49 +1,38 @@
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import api from '../api'
+import { supabase } from '../supabaseClient'
 
-interface GraficoSemanalProps {
-  token: string
-}
+const DEMO_DATA = [
+  { nombre: 'MAR', promedio: 1200, maximo: 1561, minimo: 1100 },
+  { nombre: 'JUE', promedio: 1450, maximo: 1690, minimo: 1200 },
+  { nombre: 'DOM', promedio: 2100, maximo: 5173, minimo: 1500 },
+]
 
-export default function GraficoSemanal({ token }: GraficoSemanalProps) {
+export default function GraficoSemanal() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await api.get('/api/estadisticas/semanal?tipo=Culto', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+      const { data: rows, error } = await supabase.rpc('estadisticas_semanal', { p_tipo: 'Culto' })
 
-        // Mapear datos para el gráfico
-        const mappedData = response.data.map((item: any) => ({
-          nombre: item.dia_semana,
-          promedio: item.promedio || 0,
-          maximo: item.maximo || 0,
-          minimo: item.minimo || 0,
-        }))
-
-        setData(mappedData.length > 0 ? mappedData : [
-          { nombre: 'MAR', promedio: 1200, maximo: 1561, minimo: 1100 },
-          { nombre: 'JUE', promedio: 1450, maximo: 1690, minimo: 1200 },
-          { nombre: 'DOM', promedio: 2100, maximo: 5173, minimo: 1500 },
-        ])
-      } catch (error) {
-        console.error('Error cargando datos:', error)
-        setData([
-          { nombre: 'MAR', promedio: 1200, maximo: 1561, minimo: 1100 },
-          { nombre: 'JUE', promedio: 1450, maximo: 1690, minimo: 1200 },
-          { nombre: 'DOM', promedio: 2100, maximo: 5173, minimo: 1500 },
-        ])
-      } finally {
-        setLoading(false)
+      if (error || !rows || rows.length === 0) {
+        setData(DEMO_DATA)
+      } else {
+        setData(
+          rows.map((item: any) => ({
+            nombre: item.dia_semana,
+            promedio: item.promedio || 0,
+            maximo: item.maximo || 0,
+            minimo: item.minimo || 0,
+          }))
+        )
       }
+      setLoading(false)
     }
 
     fetchData()
-  }, [token])
+  }, [])
 
   if (loading) {
     return <div className="text-center py-8">Cargando gráfico...</div>

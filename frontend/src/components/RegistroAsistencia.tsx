@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import api from '../api'
+import { supabase } from '../supabaseClient'
 
 interface RegistroAsistenciaProps {
-  token: string
   onSuccess: () => void
 }
 
@@ -15,7 +14,7 @@ const reuniones = [
   { id: 6, label: 'Domingo 18:30 (UNT Kids)', dia: 'DOM', hora: '18:30', tipo: 'UNT Kids', seccion: 2 },
 ]
 
-export default function RegistroAsistencia({ token, onSuccess }: RegistroAsistenciaProps) {
+export default function RegistroAsistencia({ onSuccess }: RegistroAsistenciaProps) {
   const [selectedReunion, setSelectedReunion] = useState<number | null>(null)
   const [asistentes, setAsistentes] = useState('')
   const [expositor, setExpositor] = useState('')
@@ -31,33 +30,29 @@ export default function RegistroAsistencia({ token, onSuccess }: RegistroAsisten
     }
 
     setLoading(true)
-    try {
-      const hoy = new Date().toISOString().split('T')[0]
-      await api.post(
-        '/api/asistencia',
-        {
-          reunion_id: selectedReunion,
-          fecha: hoy,
-          num_asistentes: parseInt(asistentes),
-          expositor: expositor || null,
-          observaciones: observaciones || null,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+    const hoy = new Date().toISOString().split('T')[0]
+    const { data: session } = await supabase.auth.getSession()
+
+    const { error } = await supabase.from('asistencia').insert({
+      reunion_id: selectedReunion,
+      fecha: hoy,
+      num_asistentes: parseInt(asistentes),
+      expositor: expositor || null,
+      observaciones: observaciones || null,
+      registrado_por: session.session?.user.id,
+    })
+
+    if (error) {
+      setMessage({ type: 'error', text: 'Error al registrar asistencia' })
+    } else {
       setMessage({ type: 'success', text: '✓ Asistencia registrada correctamente' })
       setAsistentes('')
       setExpositor('')
       setObservaciones('')
       setSelectedReunion(null)
       setTimeout(() => onSuccess(), 1500)
-    } catch (error: any) {
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.error || 'Error al registrar asistencia'
-      })
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   return (

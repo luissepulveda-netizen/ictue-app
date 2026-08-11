@@ -1,55 +1,45 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import api from '../api'
+import { supabase } from '../supabaseClient'
 
-interface GraficoAnualProps {
-  token: string
-}
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
-export default function GraficoAnual({ token }: GraficoAnualProps) {
+const DEMO_DATA = [
+  { mes: 'Ene', año2024: 1150, año2025: 1200, año2026: 1280 },
+  { mes: 'Feb', año2024: 1200, año2025: 1250, año2026: 1350 },
+  { mes: 'Mar', año2024: 1300, año2025: 1450, año2026: 1550 },
+  { mes: 'Abr', año2024: 1250, año2025: 1350, año2026: 1480 },
+  { mes: 'May', año2024: 1100, año2025: 1200, año2026: 1320 },
+  { mes: 'Jun', año2024: 1180, año2025: 1280, año2026: 1400 },
+]
+
+export default function GraficoAnual() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await api.get('/api/estadisticas/anual?tipo=Culto', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+      const { data: rows, error } = await supabase.rpc('estadisticas_anual', { p_tipo: 'Culto' })
 
-        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+      if (error || !rows || rows.length === 0) {
+        setData(DEMO_DATA)
+      } else {
         const grouped: { [key: string]: any } = {}
-
-        response.data.forEach((item: any) => {
+        rows.forEach((item: any) => {
           const mesKey = `${parseInt(item.mes) - 1}`
-          const año = parseInt(item.año)
+          const anio = parseInt(item.anio)
           if (!grouped[mesKey]) {
-            grouped[mesKey] = { mes: meses[mesKey] }
+            grouped[mesKey] = { mes: MESES[mesKey] }
           }
-          grouped[mesKey][`año${año}`] = item.promedio
+          grouped[mesKey][`año${anio}`] = item.promedio
         })
-
-        const mappedData = Object.values(grouped)
-        setData(mappedData.length > 0 ? mappedData : generarDatosDemo())
-      } catch (error) {
-        console.error('Error cargando datos:', error)
-        setData(generarDatosDemo())
-      } finally {
-        setLoading(false)
+        setData(Object.values(grouped))
       }
+      setLoading(false)
     }
 
     fetchData()
-  }, [token])
-
-  const generarDatosDemo = () => [
-    { mes: 'Ene', año2024: 1150, año2025: 1200, año2026: 1280 },
-    { mes: 'Feb', año2024: 1200, año2025: 1250, año2026: 1350 },
-    { mes: 'Mar', año2024: 1300, año2025: 1450, año2026: 1550 },
-    { mes: 'Abr', año2024: 1250, año2025: 1350, año2026: 1480 },
-    { mes: 'May', año2024: 1100, año2025: 1200, año2026: 1320 },
-    { mes: 'Jun', año2024: 1180, año2025: 1280, año2026: 1400 },
-  ]
+  }, [])
 
   if (loading) {
     return <div className="text-center py-8">Cargando gráfico...</div>

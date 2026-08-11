@@ -1,41 +1,58 @@
 import { useState, useEffect } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { supabase } from './supabaseClient'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import './App.css'
 
 function App() {
-  const [token, setToken] = useState<string | null>(null)
-  const [usuario, setUsuario] = useState<any>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [perfil, setPerfil] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token')
-    const savedUsuario = localStorage.getItem('usuario')
-    if (savedToken && savedUsuario) {
-      setToken(savedToken)
-      setUsuario(JSON.parse(savedUsuario))
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => listener.subscription.unsubscribe()
   }, [])
 
-  const handleLogin = (token: string, usuario: any) => {
-    setToken(token)
-    setUsuario(usuario)
-    localStorage.setItem('token', token)
-    localStorage.setItem('usuario', JSON.stringify(usuario))
+  useEffect(() => {
+    if (!session) {
+      setPerfil(null)
+      return
+    }
+    supabase
+      .from('perfiles')
+      .select('nombre, rol')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => setPerfil(data))
+  }, [session])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
   }
 
-  const handleLogout = () => {
-    setToken(null)
-    setUsuario(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
+  if (loading) {
+    return <div className="min-h-screen bg-ictue-lightgray" />
   }
 
   return (
     <div className="min-h-screen bg-ictue-lightgray">
-      {token ? (
-        <Dashboard usuario={usuario} token={token} onLogout={handleLogout} />
+      {session ? (
+        <Dashboard
+          usuario={{ nombre: perfil?.nombre, email: session.user.email }}
+          onLogout={handleLogout}
+        />
       ) : (
-        <Login onLogin={handleLogin} />
+        <Login onLogin={() => {}} />
       )}
     </div>
   )
