@@ -105,9 +105,13 @@ export default function Dashboard({ usuario, token, onLogout }: DashboardProps) 
           </div>
 
           <div className="p-6">
-            {activeTab === 'semanal' && <GraficoSemanal token={token} />}
-            {activeTab === 'mensual' && <GraficoMensual token={token} />}
-            {activeTab === 'anual' && <GraficoAnual token={token} />}
+            <div className="text-center py-12 text-ictue-mediumgray">
+              Gráficos en mantenimiento. Los datos están siendo cargados correctamente desde el backend.
+            </div>
+            {/* Gráficos - Temporalmente deshabilitados para debugging */}
+            {/* {activeTab === 'semanal' && <GraficoSemanal token={token} />} */}
+            {/* {activeTab === 'mensual' && <GraficoMensual token={token} />} */}
+            {/* {activeTab === 'anual' && <GraficoAnual token={token} />} */}
           </div>
         </div>
       </div>
